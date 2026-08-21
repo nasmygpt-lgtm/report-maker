@@ -118,8 +118,8 @@ function renderTable() {
     tbody.innerHTML = sorted.map(entry => `
         <tr>
             <td>${formatDate(entry.date)}</td>
-            <td>${escapeHtml(entry.company)}</td>
-            <td>${escapeHtml(entry.person)}</td>
+            <td><div class="editable-cell" contenteditable="true" data-id="${entry.id}" data-field="company" onblur="updateField(this)">${escapeHtml(entry.company)}</div></td>
+            <td><div class="editable-cell" contenteditable="true" data-id="${entry.id}" data-field="person" onblur="updateField(this)">${escapeHtml(entry.person)}</div></td>
             <td class="remark-cell">
                 <div class="remark-text" contenteditable="true" data-id="${entry.id}" onblur="updateRemark(this)">${escapeHtml(entry.remarks)}</div>
                 <div class="remark-actions">
@@ -231,6 +231,19 @@ function suggestAnother(id) {
     entries[idx].remarks = newRemark;
     saveEntries(entries);
     renderTable();
+}
+
+// ===== UPDATE FIELD (company/person editable) =====
+function updateField(el) {
+    const id = el.getAttribute('data-id');
+    const field = el.getAttribute('data-field');
+    const newText = el.innerText.trim();
+    let entries = getEntries();
+    const idx = entries.findIndex(e => e.id === id);
+    if (idx !== -1) {
+        entries[idx][field] = newText;
+        saveEntries(entries);
+    }
 }
 
 // ===== UPDATE REMARK (editable) =====

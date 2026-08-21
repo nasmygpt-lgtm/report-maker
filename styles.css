@@ -231,6 +231,18 @@ header h1 {
     position: relative;
 }
 
+.editable-cell {
+    cursor: text;
+    padding: 2px 4px;
+    border-radius: 3px;
+    outline: none;
+}
+
+.editable-cell:focus {
+    background: #fffde6;
+    box-shadow: inset 0 0 0 2px #f1c40f;
+}
+
 .remark-text {
     cursor: text;
     padding: 4px;
