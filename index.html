@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Sales Report Maker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 Daily Sales Visit Report</h1>
+            <p class="subtitle">Hotel Sales & Marketing Team</p>
+        </header>
+
+        <!-- Entry Form -->
+        <section class="form-section">
+            <h2>Add New Entry</h2>
+            <form id="reportForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="entryDate">Date</label>
+                        <input type="date" id="entryDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="companyName">Company Name</label>
+                        <input type="text" id="companyName" placeholder="e.g. Rayna, Giyas, Pace Tourism" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="personName">Person Name</label>
+                        <input type="text" id="personName" placeholder="e.g. Vimal, Aisha, Thejas" required>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label for="remarks">Remarks</label>
+                    <textarea id="remarks" rows="4" placeholder="Discussed with sales person, rates offered, inquiries received, follow-up details..." required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">➕ Add Entry</button>
+                    <button type="reset" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Filter & Actions -->
+        <section class="actions-section">
+            <div class="filter-group">
+                <label for="filterDate">Filter by Date:</label>
+                <input type="date" id="filterDate">
+                <button id="clearFilter" class="btn btn-small">Show All</button>
+            </div>
+            <div class="export-group">
+                <button id="exportExcel" class="btn btn-success">📥 Export to Excel</button>
+                <button id="clearAll" class="btn btn-danger">🗑️ Clear All Data</button>
+            </div>
+        </section>
+
+        <!-- Report Table -->
+        <section class="table-section">
+            <h2>Report <span id="reportDateLabel"></span></h2>
+            <div class="table-wrapper">
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th class="col-date">Date</th>
+                            <th class="col-company">Company Name</th>
+                            <th class="col-person">Person Name</th>
+                            <th class="col-remarks">Remarks</th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportBody">
+                        <!-- Entries will be inserted here -->
+                    </tbody>
+                </table>
+                <p id="noData" class="no-data" style="display:none;">No entries yet. Add your first report entry above.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Edit Entry</h3>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editDate">Date</label>
+                        <input type="date" id="editDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCompany">Company Name</label>
+                        <input type="text" id="editCompany" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPerson">Person Name</label>
+                        <input type="text" id="editPerson" required>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label for="editRemarks">Remarks</label>
+                    <textarea id="editRemarks" rows="4" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    <button type="button" id="cancelEdit" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
