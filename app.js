@@ -131,7 +131,56 @@ function renderTable() {
     `).join('');
 }
 
-// ===== GENERATE BUTTON =====
+// ===== BULK GENERATE =====
+document.getElementById('bulkGenerateBtn').addEventListener('click', function() {
+    const date = document.getElementById('bulkDate').value;
+    const bulkText = document.getElementById('bulkInput').value.trim();
+
+    if (!bulkText) {
+        alert('Please enter company names and person names');
+        return;
+    }
+
+    if (!date) {
+        alert('Please select a date');
+        return;
+    }
+
+    // Parse lines: "Company, Person" per line
+    const lines = bulkText.split(/[\n\r]+/).filter(l => l.trim());
+    const entries = getEntries();
+
+    let added = 0;
+    lines.forEach(line => {
+        const parts = line.split(',').map(p => p.trim());
+        if (parts.length >= 2 && parts[0] && parts[1]) {
+            const company = parts[0];
+            const person = parts[1];
+            const remark = generateRandomRemark();
+
+            entries.push({
+                id: generateId(),
+                date: date,
+                company: company,
+                person: person,
+                remarks: remark
+            });
+            added++;
+        }
+    });
+
+    if (added === 0) {
+        alert('Could not parse entries. Use format: Company Name, Person Name (one per line)');
+        return;
+    }
+
+    saveEntries(entries);
+    renderTable();
+    document.getElementById('bulkInput').value = '';
+    alert(added + ' entries generated!');
+});
+
+// ===== GENERATE BUTTON (single) =====
 document.getElementById('generateBtn').addEventListener('click', function() {
     const date = document.getElementById('entryDate').value;
     const company = document.getElementById('companyName').value.trim();
@@ -264,6 +313,8 @@ document.getElementById('clearAll').addEventListener('click', function() {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('entryDate').value = today;
+    document.getElementById('bulkDate').value = today;
     renderTable();
 });

@@ -31,7 +31,63 @@ header h1 {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+}
+
+.input-section h3 {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.bulk-section {
+    border-left: 3px solid #f1c40f;
+}
+
+.bulk-hint {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.bulk-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.bulk-textarea-group {
+    flex: 3;
+}
+
+.bulk-textarea-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.bulk-textarea-group textarea:focus {
+    outline: none;
+    border-color: #f1c40f;
+}
+
+.btn-bulk {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-bulk:hover {
+    background: #219a52;
 }
 
 .form-row {
