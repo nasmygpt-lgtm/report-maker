@@ -1,304 +1,201 @@
-// ===== Smart Daily Sales Report Generator =====
+// ===== Daily Sales Report Generator =====
+// Generates remarks in natural, simple tone matching actual report samples
 
 const STORAGE_KEY = 'salesReportEntries';
 
 // ===== REMARK GENERATION ENGINE =====
-// Templates and varied language to avoid repetition
+// Based on real samples - simple, direct, conversational language
 
-const openingPhrases = {
+// Opening phrases - how each entry starts (matched from samples)
+const openings = {
     sales: [
+        "Discussed with sales person",
+        "Discussed with Sales person",
+        "Disscussed with sales person",
         "Discussed with the sales person",
-        "Had a detailed discussion with sales representative",
-        "Spoke with the sales team member",
-        "Connected with the sales contact",
-        "Met with the sales executive"
+        "Spoke with sales person"
     ],
     contracting: [
-        "Discussed with the contracting manager",
-        "Had a conversation with contracting incharge",
-        "Spoke with the contracting team",
-        "Connected with the contracting manager",
-        "Met with the contracting representative"
+        "Discussed with contracting incharge",
+        "Discussed with contracting manager",
+        "Discussed with contract person",
+        "Disscussed with contracting incharge and followed up"
     ],
     operation: [
-        "Discussed with the operation incharge",
-        "Had a discussion with operations person",
-        "Spoke with the operations manager",
-        "Connected with the operation team",
-        "Met with the operations incharge"
+        "Discussed with Operation person",
+        "Discussed with operation incharge",
+        "Disscussed with Operation incharge"
     ],
     team: [
-        "Met the team and had a detailed discussion",
-        "Had a meeting with the team",
-        "Discussed with the team members",
-        "Connected with the entire team",
-        "Sat with the team for a discussion"
+        "Met the team, and discussed",
+        "Discussed with the team",
+        "Met the team and discussed"
+    ],
+    booking_incharge: [
+        "Discussed with booking incharge",
+        "Discussed with reservation incharge"
+    ],
+    account_manager: [
+        "Discussed with our account manager",
+        "Discussed with New account manager"
+    ],
+    admin: [
+        "Discussed with admin",
+        "Discussed with Admin officer"
+    ],
+    md: [
+        "Discussed with MD of the company"
+    ],
+    director: [
+        "Met the director and talked about our rates"
     ],
     company: [
-        "Discussed with the company representative",
-        "Had a conversation with company person",
-        "Spoke with the company contact",
-        "Met with the company representative",
-        "Connected with their representative"
+        "Discussed with company person",
+        "Met business development person"
     ]
 };
 
-const inquiryPhrases = [
-    "they have an inquiry for",
-    "there is an inquiry for",
-    "they received an inquiry for",
-    "they have a booking request for",
-    "an inquiry has come in for"
+// Connectors and transition words used in samples
+const connectors = [
+    ", and",
+    ", and he advised that",
+    ", and she advised that",
+    ", and they advised that",
+    ". However",
+    ". Also",
+    ". Currently",
+    ". Due to",
+    ". As per"
 ];
 
-const ratesPhrases = [
+// Rate related phrases
+const ratePhrases = [
     "rates has been given",
-    "rates have been offered",
-    "we have offered rates of",
-    "pricing has been shared at",
-    "rates provided at"
+    "rates has been offered",
+    "rates have been given",
+    "I have offered",
+    "rates has been given and offered",
+    "and rates has been given"
 ];
 
+// Waiting phrases
 const waitingPhrases = [
     "waiting for the final update from them",
-    "awaiting their confirmation",
-    "pending their final response",
-    "waiting for them to revert with confirmation",
-    "expecting their feedback shortly"
+    "waiting for the final update",
+    "waiting for their update",
+    "waiting for the update",
+    "and waiting for the final update from them"
 ];
 
-const pushPhrases = [
-    "and requested them to push for confirmation",
-    "and encouraged them to convert this booking",
-    "and urged them to confirm at the earliest",
-    "and requested to expedite the confirmation",
-    "and asked them to follow up for a positive response"
+// Request phrases
+const requestPhrases = [
+    "and requested him to support",
+    "and requested her to confirm this inquiry",
+    "and requested them to push",
+    "Requested him to confirm this request with us",
+    "Requested to start offering our rates for their clients",
+    "and request to support",
+    "requested her to support in the same way",
+    "requested them to offer rates whenever there is inquiries"
 ];
 
-const confirmPhrases = [
-    "Managed to confirm",
-    "Successfully secured confirmation for",
-    "The booking has been confirmed for",
-    "Received confirmation for",
-    "Booking confirmed successfully for"
-];
-
-const newAgencyPhrases = [
-    "New travel agency, approached and rates has been given and requested to start offering our rates for their clients.",
-    "A new agency partner was approached, rates and hotel details have been shared, and requested them to start promoting our property.",
-    "New travel partner identified. Rates and property details shared, requesting them to begin offering our hotel to their clientele.",
-    "Approached this new agency, provided our rates and property information, and invited them to start sending bookings our way.",
-    "New agency contact established. Our competitive rates have been shared and they have been encouraged to include our hotel in their offerings."
-];
-
-const seasonPhrases = [
-    "discussed about our summer and winter rates and requested to push to their market",
-    "talked about our rates for the upcoming seasons and encouraged them to promote our hotel",
-    "reviewed seasonal pricing and requested them to actively market our property",
-    "discussed current and upcoming seasonal rates, encouraging them to push our hotel in their network",
-    "went over our seasonal rates and requested increased promotion across their channels"
-];
-
-const parityPhrases = [
-    "advised that they have rate parity issues",
-    "mentioned concerns about rate parity across channels",
-    "raised the issue of rate discrepancies on their platform",
-    "highlighted parity concerns between different booking channels",
-    "brought up rate parity challenges they are facing"
-];
-
-// Random picker helper
+// Random pick helper
 function pick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Track used phrases to avoid repetition within same session
-let usedOpenings = new Set();
-
-function pickUnique(arr, category) {
-    const available = arr.filter((_, i) => !usedOpenings.has(category + i));
-    if (available.length === 0) {
-        // Reset if all used
-        arr.forEach((_, i) => usedOpenings.delete(category + i));
-        return pick(arr);
-    }
-    const chosen = pick(available);
-    const idx = arr.indexOf(chosen);
-    usedOpenings.add(category + idx);
-    return chosen;
-}
-
 // ===== MAIN REMARK GENERATOR =====
 function generateRemark(data) {
-    const { personRole, discussionType, keyPoints, travelDates, rooms, rateOffered, roomType, mealPlan, supplement, duration } = data;
+    const { personRole, discussionType, keyPoints, travelDates, rooms, rateOffered, roomType, mealPlan, supplement, duration, gender } = data;
 
     let remark = '';
 
     switch (discussionType) {
         case 'inquiry':
-            remark = generateInquiryRemark(data);
-            break;
-        case 'followup':
-            remark = generateFollowupRemark(data);
-            break;
-        case 'confirmed':
-            remark = generateConfirmedRemark(data);
-            break;
-        case 'new_agency':
-            remark = generateNewAgencyRemark(data);
-            break;
-        case 'rates_discussion':
-            remark = generateRatesDiscussionRemark(data);
+            remark = buildInquiryRemark(data);
             break;
         case 'group_inquiry':
-            remark = generateGroupInquiryRemark(data);
+            remark = buildGroupInquiryRemark(data);
             break;
         case 'fit_inquiry':
-            remark = generateFITInquiryRemark(data);
+            remark = buildFITInquiryRemark(data);
+            break;
+        case 'followup':
+            remark = buildFollowupRemark(data);
+            break;
+        case 'confirmed':
+            remark = buildConfirmedRemark(data);
+            break;
+        case 'new_agency':
+            remark = buildNewAgencyRemark(data);
+            break;
+        case 'rates_discussion':
+            remark = buildRatesDiscussionRemark(data);
+            break;
+        case 'market_update':
+            remark = buildMarketUpdateRemark(data);
             break;
         case 'parity_issue':
-            remark = generateParityRemark(data);
+            remark = buildParityRemark(data);
+            break;
+        case 'corporate':
+            remark = buildCorporateRemark(data);
             break;
         default:
-            remark = generateGenericRemark(data);
+            remark = buildGenericRemark(data);
     }
 
-    return remark;
+    return cleanText(remark);
 }
 
-function generateInquiryRemark(data) {
+function buildInquiryRemark(data) {
     let parts = [];
-    
-    parts.push(pickUnique(openingPhrases[data.personRole], data.personRole));
-    
-    if (data.travelDates) {
-        parts.push(`and ${pick(inquiryPhrases)} ${data.travelDates}`);
-    } else if (data.keyPoints) {
-        parts.push(`and ${pick(inquiryPhrases)} the mentioned dates`);
-    }
+    const g = data.gender || 'he';
+    const G = g.charAt(0).toUpperCase() + g.slice(1);
 
-    if (data.rooms) {
-        parts.push(`for ${data.rooms}`);
-    }
+    parts.push(pick(openings[data.personRole] || openings.sales));
 
-    if (data.roomType) {
-        parts.push(`(${data.roomType})`);
-    }
-
-    if (data.mealPlan) {
-        parts.push(`on ${data.mealPlan} basis`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(`and ${pick(ratesPhrases)} ${data.rateOffered}`);
-    }
-
-    if (data.supplement) {
-        parts.push(`with ${data.supplement} supplement`);
-    }
-
-    parts.push(`. ${pick(waitingPhrases)} ${pick(pushPhrases)}.`);
-
-    // Add any extra key points
     if (data.keyPoints) {
-        const extraInfo = parseKeyPoints(data.keyPoints);
-        if (extraInfo) {
-            parts.push(` ${extraInfo}`);
+        parts.push(`, ${processKeyPoints(data.keyPoints, data)}`);
+    } else {
+        parts.push(`, and ${g} advised that they have inquiry`);
+        
+        if (data.travelDates) {
+            parts.push(` for ${data.travelDates}`);
+        }
+
+        if (data.rooms) {
+            parts.push(` ${data.rooms}`);
+        }
+
+        if (data.roomType) {
+            parts.push(` ${data.roomType}`);
+        }
+
+        if (data.mealPlan) {
+            parts.push(` with ${data.mealPlan}`);
         }
     }
 
-    return cleanRemark(parts.join(' '));
-}
-
-function generateFollowupRemark(data) {
-    let parts = [];
-
-    parts.push(`Followed up with ${getRoleText(data.personRole)}`);
-
-    if (data.keyPoints) {
-        const points = parseKeyPoints(data.keyPoints);
-        parts.push(`, ${points}`);
-    } else {
-        parts.push(' regarding pending inquiries and bookings');
+    if (data.rateOffered) {
+        parts.push(` and ${pick(ratePhrases)} ${data.rateOffered}`);
     }
 
-    if (data.rateOffered) {
-        parts.push(`. Rates of ${data.rateOffered} were previously offered`);
+    if (data.supplement) {
+        parts.push(`. Also ${data.supplement} supplement`);
     }
 
     parts.push(`. ${pick(waitingPhrases)}.`);
 
-    return cleanRemark(parts.join(''));
+    return parts.join('');
 }
 
-function generateConfirmedRemark(data) {
+function buildGroupInquiryRemark(data) {
     let parts = [];
+    const g = data.gender || 'he';
 
-    parts.push(pick(confirmPhrases));
-
-    if (data.rooms) {
-        parts.push(` ${data.rooms}`);
-    }
-
-    if (data.travelDates) {
-        parts.push(` for ${data.travelDates}`);
-    }
-
-    if (data.duration) {
-        parts.push(` for ${data.duration}`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(` and rates confirmed at ${data.rateOffered}`);
-    }
-
-    if (data.mealPlan) {
-        parts.push(` on ${data.mealPlan} basis`);
-    }
-
-    if (data.keyPoints) {
-        parts.push(`. ${parseKeyPoints(data.keyPoints)}`);
-    }
-
-    parts.push('.');
-
-    return cleanRemark(parts.join(''));
-}
-
-function generateNewAgencyRemark(data) {
-    let remark = pick(newAgencyPhrases);
-
-    if (data.keyPoints) {
-        remark += ` ${parseKeyPoints(data.keyPoints)}`;
-    }
-
-    return cleanRemark(remark);
-}
-
-function generateRatesDiscussionRemark(data) {
-    let parts = [];
-
-    parts.push(pickUnique(openingPhrases[data.personRole], data.personRole));
-    parts.push(`, ${pick(seasonPhrases)}`);
-
-    if (data.rateOffered) {
-        parts.push(`. Current rates shared at ${data.rateOffered}`);
-    }
-
-    if (data.keyPoints) {
-        parts.push(`. ${parseKeyPoints(data.keyPoints)}`);
-    }
-
-    parts.push(`. ${pick(pushPhrases)}.`);
-
-    return cleanRemark(parts.join(''));
-}
-
-function generateGroupInquiryRemark(data) {
-    let parts = [];
-
-    parts.push(pickUnique(openingPhrases[data.personRole], data.personRole));
-    parts.push(', and they have a group inquiry');
+    parts.push(pick(openings[data.personRole] || openings.sales));
+    parts.push(`, and they have group inquiry`);
 
     if (data.travelDates) {
         parts.push(` for ${data.travelDates}`);
@@ -317,38 +214,39 @@ function generateGroupInquiryRemark(data) {
     }
 
     if (data.rateOffered) {
-        parts.push(` and ${pick(ratesPhrases)} ${data.rateOffered}`);
+        parts.push(` and ${pick(ratePhrases)} ${data.rateOffered}`);
     }
 
     if (data.supplement) {
-        parts.push(` plus ${data.supplement} supplement`);
+        parts.push(`. ${data.supplement} supplement given`);
     }
 
     if (data.duration) {
         parts.push(`. Duration: ${data.duration}`);
     }
 
-    parts.push(`. Requested to convert this group with us. ${pick(waitingPhrases)}.`);
-
     if (data.keyPoints) {
-        parts.push(` ${parseKeyPoints(data.keyPoints)}`);
+        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
     }
 
-    return cleanRemark(parts.join(''));
+    parts.push(`. ${pick(waitingPhrases)}.`);
+
+    return parts.join('');
 }
 
-function generateFITInquiryRemark(data) {
+function buildFITInquiryRemark(data) {
     let parts = [];
+    const g = data.gender || 'he';
 
-    parts.push(pickUnique(openingPhrases[data.personRole], data.personRole));
-    parts.push(', and they have a FIT inquiry');
+    parts.push(pick(openings[data.personRole] || openings.sales));
+    parts.push(`, and they have FIT inquiry`);
 
     if (data.travelDates) {
         parts.push(` for ${data.travelDates}`);
     }
 
     if (data.rooms) {
-        parts.push(` for ${data.rooms}`);
+        parts.push(` ${data.rooms}`);
     }
 
     if (data.roomType) {
@@ -356,7 +254,7 @@ function generateFITInquiryRemark(data) {
     }
 
     if (data.rateOffered) {
-        parts.push(` and ${pick(ratesPhrases)} ${data.rateOffered}`);
+        parts.push(` and ${pick(ratePhrases)} ${data.rateOffered}`);
     }
 
     if (data.mealPlan) {
@@ -364,96 +262,236 @@ function generateFITInquiryRemark(data) {
     }
 
     if (data.supplement) {
-        parts.push(`. Also ${data.supplement} supplement applied`);
+        parts.push(`. Also ${data.supplement} supplement`);
+    }
+
+    if (data.keyPoints) {
+        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
     }
 
     parts.push(`. ${pick(waitingPhrases)}.`);
 
-    if (data.keyPoints) {
-        parts.push(` ${parseKeyPoints(data.keyPoints)}`);
-    }
-
-    return cleanRemark(parts.join(''));
+    return parts.join('');
 }
 
-function generateParityRemark(data) {
+function buildFollowupRemark(data) {
     let parts = [];
+    const g = data.gender || 'he';
 
-    parts.push(pickUnique(openingPhrases[data.personRole], data.personRole));
-    parts.push(`, and ${pick(parityPhrases)}`);
+    parts.push(`Followed up with ${g === 'he' ? 'him' : 'her'}`);
 
     if (data.keyPoints) {
-        parts.push(`. ${parseKeyPoints(data.keyPoints)}`);
+        parts.push(` ${processKeyPoints(data.keyPoints, data)}`);
     } else {
-        parts.push('. Have advised management and will review special rates on their portal');
+        parts.push(` for future bookings and events inquiry`);
+        parts.push(` and ${g} advised that already ${g} is offering our rates`);
+    }
+
+    if (data.rateOffered) {
+        parts.push(`. Rates of ${data.rateOffered} has been offered`);
+    }
+
+    parts.push(`. ${pick(waitingPhrases)}.`);
+
+    return parts.join('');
+}
+
+function buildConfirmedRemark(data) {
+    let parts = [];
+
+    parts.push(`Managed to confirm`);
+
+    if (data.rooms) {
+        parts.push(` ${data.rooms}`);
+    }
+
+    if (data.travelDates) {
+        parts.push(` for ${data.travelDates}`);
+    }
+
+    if (data.duration) {
+        parts.push(` for ${data.duration}`);
+    }
+
+    if (data.rateOffered) {
+        parts.push(` and rates confirmed ${data.rateOffered}`);
+    }
+
+    if (data.mealPlan) {
+        parts.push(` on ${data.mealPlan}`);
+    }
+
+    if (data.keyPoints) {
+        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
+    }
+
+    return parts.join('');
+}
+
+function buildNewAgencyRemark(data) {
+    const templates = [
+        "New travel agency, approached and rates has been given and request to start offering our rates for their clients.",
+        "New Travel agency, approached and rates has been given and requested to start offering our rates for their clients.",
+        "New B2b Portal discussed with them, and rates and our hotel details has been shared with them.",
+        "New agency partner, approached and our rates and hotel information has been shared. Requested them to start offering our hotel."
+    ];
+
+    let remark = pick(templates);
+
+    if (data.keyPoints) {
+        remark += ` ${processKeyPoints(data.keyPoints, data)}`;
+    }
+
+    return remark;
+}
+
+function buildRatesDiscussionRemark(data) {
+    let parts = [];
+    const g = data.gender || 'he';
+
+    parts.push(pick(openings[data.personRole] || openings.sales));
+    parts.push(` and talked about our rates for summer and winter`);
+
+    if (data.keyPoints) {
+        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
+    } else {
+        parts.push(`. ${G} advised that they are start receiving inquiries`);
+    }
+
+    if (data.rateOffered) {
+        parts.push(`. Rates has been given ${data.rateOffered}`);
+    }
+
+    parts.push(`. ${pick(requestPhrases)}.`);
+
+    return parts.join('');
+}
+
+function buildMarketUpdateRemark(data) {
+    let parts = [];
+    const g = data.gender || 'he';
+
+    parts.push(pick(openings[data.personRole] || openings.sales));
+
+    if (data.keyPoints) {
+        parts.push(`, and ${g} advised that ${processKeyPoints(data.keyPoints, data)}`);
+    } else {
+        parts.push(`, and ${g} advised that market is slowly starting`);
+    }
+
+    if (data.rateOffered) {
+        parts.push(`. Our rates has been given ${data.rateOffered}`);
+    }
+
+    parts.push(`. ${pick(waitingPhrases)}.`);
+
+    return parts.join('');
+}
+
+function buildParityRemark(data) {
+    let parts = [];
+    const g = data.gender || 'he';
+
+    parts.push(pick(openings[data.personRole] || openings.sales));
+    parts.push(` for the future rates and promotion`);
+    parts.push(`. ${G === 'He' ? 'He' : 'She'} advised that ${g} have problem with rate parity issues`);
+
+    if (data.keyPoints) {
+        parts.push(`, ${processKeyPoints(data.keyPoints, data)}`);
+    } else {
+        parts.push(`, and I have advised him so much discounted we cant do, however we will consider and update special rates on their portal`);
     }
 
     parts.push('.');
 
-    return cleanRemark(parts.join(''));
+    return parts.join('');
 }
 
-function generateGenericRemark(data) {
+function buildCorporateRemark(data) {
     let parts = [];
-    parts.push(pickUnique(openingPhrases[data.personRole], data.personRole));
-    
+    const g = data.gender || 'he';
+
+    parts.push(pick(openings[data.personRole] || openings.company));
+    parts.push(`, and their corporate company, discussed about hotel and rates`);
+
     if (data.keyPoints) {
-        parts.push(`. ${parseKeyPoints(data.keyPoints)}`);
+        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
+    } else {
+        parts.push(`. ${G === 'He' ? 'He' : 'She'} advised that for ${g === 'he' ? 'his' : 'her'} staff ${g} will book hotel`);
+    }
+
+    if (data.rateOffered) {
+        parts.push(`. Rates offered ${data.rateOffered}`);
+    }
+
+    parts.push('.');
+
+    return parts.join('');
+}
+
+function buildGenericRemark(data) {
+    let parts = [];
+    const g = data.gender || 'he';
+
+    parts.push(pick(openings[data.personRole] || openings.sales));
+
+    if (data.keyPoints) {
+        parts.push(`, ${processKeyPoints(data.keyPoints, data)}`);
+    }
+
+    if (data.rateOffered) {
+        parts.push(`. Rates has been offered ${data.rateOffered}`);
     }
 
     parts.push(`. ${pick(waitingPhrases)}.`);
-    return cleanRemark(parts.join(''));
+
+    return parts.join('');
 }
 
-// Helper: parse key points into flowing text
-function parseKeyPoints(text) {
+// Process key points - convert bullets into flowing natural text
+function processKeyPoints(text, data) {
     if (!text || text.trim() === '') return '';
 
-    // Split by newlines or dashes
+    // Split by newlines or dashes/bullets
     let points = text.split(/[\n\r]+/)
         .map(p => p.replace(/^[-•*]\s*/, '').trim())
         .filter(p => p.length > 0);
 
     if (points.length === 0) return text.trim();
-    if (points.length === 1) return capitalizeFirst(points[0]);
+    if (points.length === 1) return points[0];
 
-    // Join points into flowing sentence
-    let result = capitalizeFirst(points[0]);
+    // Join naturally with "and", "Also", "However" like in samples
+    let result = points[0];
     for (let i = 1; i < points.length; i++) {
-        if (i === points.length - 1) {
-            result += ` and ${points[i].toLowerCase()}`;
+        const connectorOptions = ['. Also ', '. ', ', and ', '. However '];
+        // Use "Also" for additional info, "However" for contrast
+        const point = points[i].toLowerCase();
+        if (point.startsWith('however') || point.startsWith('but')) {
+            result += `. However ${points[i].replace(/^(however|but)\s*/i, '')}`;
+        } else if (point.startsWith('also')) {
+            result += `. Also ${points[i].replace(/^also\s*/i, '')}`;
         } else {
-            result += `, ${points[i].toLowerCase()}`;
+            // Alternate between connectors
+            if (i % 2 === 0) {
+                result += `. Also ${points[i]}`;
+            } else {
+                result += `, and ${points[i]}`;
+            }
         }
     }
+
     return result;
 }
 
-function getRoleText(role) {
-    const map = {
-        sales: 'the sales person',
-        contracting: 'the contracting manager',
-        operation: 'the operation incharge',
-        team: 'the team',
-        company: 'the company representative'
-    };
-    return map[role] || 'the contact person';
-}
-
-function capitalizeFirst(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function cleanRemark(text) {
-    // Fix double spaces, double periods, spacing issues
+// Clean up text - fix double periods, spacing
+function cleanText(text) {
     return text
         .replace(/\s+/g, ' ')
         .replace(/\.\./g, '.')
         .replace(/\s\./g, '.')
-        .replace(/,\s*,/g, ',')
-        .replace(/\.\s*,/g, '.')
-        .replace(/\s+\)/g, ')')
-        .replace(/\(\s+/g, '(')
+        .replace(/,\s*\./g, '.')
+        .replace(/\.\s*,/g, ', ')
+        .replace(/,,/g, ',')
         .trim();
 }
 
@@ -474,12 +512,12 @@ function formatDate(dateStr) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const month = months[date.getMonth()];
-    
+
     let suffix = 'th';
     if (day === 1 || day === 21 || day === 31) suffix = 'st';
     else if (day === 2 || day === 22) suffix = 'nd';
     else if (day === 3 || day === 23) suffix = 'rd';
-    
+
     return `${day}${suffix} ${month}`;
 }
 
@@ -517,7 +555,7 @@ function renderTable() {
             <td>${formatDate(entry.date)}</td>
             <td>${escapeHtml(entry.company)}</td>
             <td>${escapeHtml(entry.person)}</td>
-            <td>${escapeHtml(entry.remarks)}</td>
+            <td>${escapeHtml(entry.remarks)}<br><button class="delete-btn" onclick="deleteEntry('${entry.id}')">❌</button></td>
         </tr>
     `).join('');
 }
@@ -536,7 +574,8 @@ document.getElementById('reportForm').addEventListener('submit', function(e) {
         roomType: document.getElementById('roomType').value.trim(),
         mealPlan: document.getElementById('mealPlan').value,
         supplement: document.getElementById('supplement').value.trim(),
-        duration: document.getElementById('duration').value.trim()
+        duration: document.getElementById('duration').value.trim(),
+        gender: document.getElementById('gender').value
     };
 
     // Generate the remark automatically
@@ -561,21 +600,24 @@ document.getElementById('reportForm').addEventListener('submit', function(e) {
     document.getElementById('entryDate').value = dateVal;
 
     showNotification('Report entry generated! ✅');
-
-    // Scroll to table
     document.getElementById('reportTable').scrollIntoView({ behavior: 'smooth' });
 });
+
+// Delete entry
+function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    let entries = getEntries();
+    entries = entries.filter(e => e.id !== id);
+    saveEntries(entries);
+    renderTable();
+}
 
 // ===== EXPORT EXCEL =====
 document.getElementById('exportExcel').addEventListener('click', function() {
     const entries = getEntries();
-    if (entries.length === 0) {
-        alert('No entries to export!');
-        return;
-    }
+    if (entries.length === 0) { alert('No entries to export!'); return; }
 
     const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-
     const excelData = sorted.map(entry => ({
         'Date': formatDate(entry.date),
         'Company Name': entry.company,
@@ -585,14 +627,7 @@ document.getElementById('exportExcel').addEventListener('click', function() {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);
-
-    ws['!cols'] = [
-        { wch: 12 },
-        { wch: 22 },
-        { wch: 18 },
-        { wch: 85 }
-    ];
-
+    ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 18 }, { wch: 90 }];
     XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
 
     const today = new Date().toISOString().split('T')[0];
@@ -603,13 +638,9 @@ document.getElementById('exportExcel').addEventListener('click', function() {
 // ===== PRINT =====
 document.getElementById('printReport').addEventListener('click', function() {
     const entries = getEntries();
-    if (entries.length === 0) {
-        alert('No entries to print!');
-        return;
-    }
+    if (entries.length === 0) { alert('No entries to print!'); return; }
 
     const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-
     let rows = sorted.map(entry => `
         <tr>
             <td>${formatDate(entry.date)}</td>
@@ -620,26 +651,23 @@ document.getElementById('printReport').addEventListener('click', function() {
     `).join('');
 
     document.getElementById('printArea').innerHTML = `
-        <h2 style="text-align:center; margin-bottom:15px;">Daily Sales Visit Report</h2>
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Company Name</th>
-                    <th>Person Name</th>
-                    <th>Remarks</th>
-                </tr>
-            </thead>
+        <h2 style="text-align:center;margin-bottom:15px;">Daily Sales Visit Report</h2>
+        <table class="report-table" style="width:100%;border-collapse:collapse;border:2px solid #000;">
+            <thead><tr style="background:#ffff00;">
+                <th style="border:1px solid #000;padding:10px;">Date</th>
+                <th style="border:1px solid #000;padding:10px;">Company Name</th>
+                <th style="border:1px solid #000;padding:10px;">Person Name</th>
+                <th style="border:1px solid #000;padding:10px;">Remarks</th>
+            </tr></thead>
             <tbody>${rows}</tbody>
         </table>
     `;
-
     window.print();
 });
 
 // ===== CLEAR ALL =====
 document.getElementById('clearAll').addEventListener('click', function() {
-    if (!confirm('⚠️ Delete ALL entries? This cannot be undone!')) return;
+    if (!confirm('⚠️ Delete ALL entries?')) return;
     localStorage.removeItem(STORAGE_KEY);
     renderTable();
     showNotification('All entries cleared!');
@@ -649,12 +677,10 @@ document.getElementById('clearAll').addEventListener('click', function() {
 function showNotification(message) {
     const existing = document.querySelector('.notification');
     if (existing) existing.remove();
-
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.textContent = message;
     document.body.appendChild(notification);
-
     setTimeout(() => {
         notification.style.opacity = '0';
         notification.style.transition = 'opacity 0.3s';

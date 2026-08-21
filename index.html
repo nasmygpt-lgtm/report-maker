@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Sales Report Generator</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
     <div class="container">
@@ -32,94 +32,107 @@
                     </div>
                 </div>
 
-                <div class="form-row two-col">
+                <div class="form-row three-col">
                     <div class="form-group">
-                        <label for="personRole">Person Role</label>
+                        <label for="personRole">Discussed With</label>
                         <select id="personRole">
                             <option value="sales">Sales Person</option>
-                            <option value="contracting">Contracting Manager</option>
-                            <option value="operation">Operation Incharge</option>
+                            <option value="contracting">Contracting Manager/Incharge</option>
+                            <option value="operation">Operation Person/Incharge</option>
                             <option value="team">The Team</option>
+                            <option value="booking_incharge">Booking/Reservation Incharge</option>
+                            <option value="account_manager">Account Manager</option>
+                            <option value="admin">Admin</option>
+                            <option value="md">MD of Company</option>
+                            <option value="director">Director</option>
                             <option value="company">Company Person</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="discussionType">Discussion Type</label>
+                        <label for="discussionType">Type</label>
                         <select id="discussionType">
-                            <option value="inquiry">Have Inquiry / Rates Given</option>
-                            <option value="followup">Follow Up / Waiting Update</option>
-                            <option value="confirmed">Booking Confirmed</option>
-                            <option value="new_agency">New Agency Approached</option>
-                            <option value="rates_discussion">Rates & Season Discussion</option>
+                            <option value="inquiry">Inquiry / Rates Given</option>
                             <option value="group_inquiry">Group Inquiry</option>
                             <option value="fit_inquiry">FIT Inquiry</option>
-                            <option value="parity_issue">Rate Parity / Portal Issue</option>
+                            <option value="followup">Follow Up</option>
+                            <option value="confirmed">Booking Confirmed</option>
+                            <option value="new_agency">New Agency / B2B Portal</option>
+                            <option value="rates_discussion">Rates & Season Discussion</option>
+                            <option value="market_update">Market Update / Status</option>
+                            <option value="parity_issue">Rate Parity Issue</option>
+                            <option value="corporate">Corporate Account</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">He/She</label>
+                        <select id="gender">
+                            <option value="he">He</option>
+                            <option value="she">She</option>
+                            <option value="they">They</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group full-width">
-                    <label for="keyPoints">Key Points <span class="hint">(Enter your bullet points - the report will be generated automatically)</span></label>
-                    <textarea id="keyPoints" rows="4" placeholder="Example:
-- inquiry for Oct 12-18
-- 10 rooms with breakfast
-- offered AED 250+15
-- requested to confirm group"></textarea>
+                    <label for="keyPoints">Key Points <span class="hint">(write your points, report will be generated)</span></label>
+                    <textarea id="keyPoints" rows="3" placeholder="Example:
+- they have inquiry for Sep and 25 rooms
+- requesting 110 with TD
+- informed him will discuss with management"></textarea>
                 </div>
 
-                <!-- Optional fields that appear based on discussion type -->
-                <div id="optionalFields" class="optional-fields">
+                <!-- Optional detail fields -->
+                <div class="optional-fields">
+                    <p class="optional-title">Optional Details (fill what applies)</p>
                     <div class="form-row three-col">
                         <div class="form-group">
-                            <label for="travelDates">Travel Dates (optional)</label>
+                            <label for="travelDates">Travel Dates</label>
                             <input type="text" id="travelDates" placeholder="e.g. Oct 12-18, 2026">
                         </div>
                         <div class="form-group">
-                            <label for="rooms">Rooms / Pax (optional)</label>
+                            <label for="rooms">Rooms / Pax</label>
                             <input type="text" id="rooms" placeholder="e.g. 10 rooms, 30 pax">
                         </div>
                         <div class="form-group">
-                            <label for="rateOffered">Rate Offered (optional)</label>
+                            <label for="rateOffered">Rate Offered</label>
                             <input type="text" id="rateOffered" placeholder="e.g. AED 250+15">
                         </div>
                     </div>
-                    <div class="form-row two-col">
+                    <div class="form-row four-col">
                         <div class="form-group">
-                            <label for="roomType">Room Type (optional)</label>
-                            <input type="text" id="roomType" placeholder="e.g. Double, Triple, DBL+TRPL">
+                            <label for="roomType">Room Type</label>
+                            <input type="text" id="roomType" placeholder="e.g. Double, Triple">
                         </div>
                         <div class="form-group">
-                            <label for="mealPlan">Meal Plan (optional)</label>
+                            <label for="mealPlan">Meal Plan</label>
                             <select id="mealPlan">
-                                <option value="">-- Select --</option>
-                                <option value="RO">Room Only (RO)</option>
-                                <option value="BB">Bed & Breakfast (BB)</option>
-                                <option value="HB">Half Board (HB)</option>
-                                <option value="FB">Full Board (FB)</option>
-                                <option value="TD">Tour Desk (TD)</option>
+                                <option value="">--</option>
+                                <option value="Room Only">Room Only</option>
+                                <option value="BB">BB (Breakfast)</option>
+                                <option value="HB">HB (Half Board)</option>
+                                <option value="FB">FB (Full Board)</option>
+                                <option value="TD">TD (Tour Desk)</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="form-row two-col">
                         <div class="form-group">
-                            <label for="supplement">Supplement (optional)</label>
-                            <input type="text" id="supplement" placeholder="e.g. Diwali AED 50, NYE AED 250">
+                            <label for="supplement">Supplement</label>
+                            <input type="text" id="supplement" placeholder="e.g. Diwali AED 50">
                         </div>
                         <div class="form-group">
-                            <label for="duration">Duration (optional)</label>
+                            <label for="duration">Duration</label>
                             <input type="text" id="duration" placeholder="e.g. 3 nights, 6N/7D">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary btn-large">📄 Generate & Add Entry</button>
-                    <button type="reset" class="btn btn-secondary">Clear</button>
+                    <button type="submit" class="btn btn-primary btn-large">📄 Generate & Add</button>
+                    <button type="reset" class="btn btn-secondary">Clear Form</button>
                 </div>
             </form>
         </section>
 
-        <!-- Generated Report -->
+        <!-- Report Table -->
         <section class="report-section">
             <div class="report-header">
                 <h2>Generated Report</h2>
@@ -139,10 +152,9 @@
                             <th>Remarks</th>
                         </tr>
                     </thead>
-                    <tbody id="reportBody">
-                    </tbody>
+                    <tbody id="reportBody"></tbody>
                 </table>
-                <p id="noData" class="no-data">No entries yet. Fill the form above and click "Generate & Add Entry".</p>
+                <p id="noData" class="no-data">No entries yet. Fill the form and click "Generate & Add".</p>
             </div>
         </section>
     </div>
@@ -151,6 +163,6 @@
     <div id="printArea" class="print-area"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>

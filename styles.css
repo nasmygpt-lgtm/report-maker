@@ -71,6 +71,10 @@ section h2 {
     grid-template-columns: 1fr 1fr;
 }
 
+.form-row.four-col {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
 .form-group {
     display: flex;
     flex-direction: column;
@@ -119,6 +123,27 @@ section h2 {
     border-radius: 8px;
     border: 1px dashed #ddd;
     margin-bottom: 15px;
+}
+
+.optional-title {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    opacity: 0.4;
+    float: right;
+    margin-top: 5px;
+}
+
+.delete-btn:hover {
+    opacity: 1;
 }
 
 .form-actions {
@@ -361,7 +386,8 @@ section h2 {
 /* Responsive */
 @media (max-width: 768px) {
     .form-row.three-col,
-    .form-row.two-col {
+    .form-row.two-col,
+    .form-row.four-col {
         grid-template-columns: 1fr;
     }
     .report-header {
