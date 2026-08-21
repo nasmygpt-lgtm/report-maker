@@ -122,7 +122,10 @@ function renderTable() {
             <td>${escapeHtml(entry.person)}</td>
             <td class="remark-cell">
                 <div class="remark-text" contenteditable="true" data-id="${entry.id}" onblur="updateRemark(this)">${escapeHtml(entry.remarks)}</div>
-                <button class="row-delete" onclick="deleteEntry('${entry.id}')">❌</button>
+                <div class="remark-actions">
+                    <button class="btn-suggest" onclick="suggestAnother('${entry.id}')" title="Suggest another remark">🔄 Suggest Another</button>
+                    <button class="row-delete" onclick="deleteEntry('${entry.id}')" title="Delete">❌</button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -160,6 +163,26 @@ document.getElementById('generateBtn').addEventListener('click', function() {
     document.getElementById('personName').value = '';
     document.getElementById('companyName').focus();
 });
+
+// ===== SUGGEST ANOTHER REMARK =====
+function suggestAnother(id) {
+    let entries = getEntries();
+    const idx = entries.findIndex(e => e.id === id);
+    if (idx === -1) return;
+
+    // Get a different remark than current one
+    const currentRemark = entries[idx].remarks;
+    let newRemark = generateRandomRemark();
+    let attempts = 0;
+    while (newRemark === currentRemark && attempts < 10) {
+        newRemark = generateRandomRemark();
+        attempts++;
+    }
+
+    entries[idx].remarks = newRemark;
+    saveEntries(entries);
+    renderTable();
+}
 
 // ===== UPDATE REMARK (editable) =====
 function updateRemark(el) {
