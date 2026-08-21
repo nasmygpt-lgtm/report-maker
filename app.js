@@ -1,7 +1,6 @@
-// ===== Daily Sales Report Maker =====
+// ===== Daily Sales Report Generator =====
 
-// Data storage using localStorage
-const STORAGE_KEY = 'salesReportData';
+const STORAGE_KEY = 'salesReportEntries';
 
 // Get entries from localStorage
 function getEntries() {
@@ -12,6 +11,7 @@ function getEntries() {
 // Save entries to localStorage
 function saveEntries(entries) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    renderEntries();
 }
 
 // Format date to display format (e.g., "13th Aug")
@@ -22,7 +22,6 @@ function formatDate(dateStr) {
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const month = months[date.getMonth()];
     
-    // Add ordinal suffix
     let suffix = 'th';
     if (day === 1 || day === 21 || day === 31) suffix = 'st';
     else if (day === 2 || day === 22) suffix = 'nd';
@@ -36,56 +35,38 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Render the table
-function renderTable(filter = null) {
-    const tbody = document.getElementById('reportBody');
-    const noData = document.getElementById('noData');
-    const dateLabel = document.getElementById('reportDateLabel');
-    
-    let entries = getEntries();
-    
-    // Sort by date (newest first)
-    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    // Apply filter
-    if (filter) {
-        entries = entries.filter(e => e.date === filter);
-        dateLabel.textContent = `- ${formatDate(filter)}`;
-    } else {
-        dateLabel.textContent = '';
-    }
-    
-    if (entries.length === 0) {
-        tbody.innerHTML = '';
-        noData.style.display = 'block';
-        document.getElementById('reportTable').style.display = 'none';
-        return;
-    }
-    
-    noData.style.display = 'none';
-    document.getElementById('reportTable').style.display = 'table';
-    
-    tbody.innerHTML = entries.map(entry => `
-        <tr>
-            <td>${formatDate(entry.date)}</td>
-            <td>${escapeHtml(entry.company)}</td>
-            <td>${escapeHtml(entry.person)}</td>
-            <td>${escapeHtml(entry.remarks)}</td>
-            <td>
-                <div class="action-btns">
-                    <button class="btn-edit" onclick="editEntry('${entry.id}')" title="Edit">✏️</button>
-                    <button class="btn-delete" onclick="deleteEntry('${entry.id}')" title="Delete">🗑️</button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// Escape HTML to prevent XSS
+// Escape HTML
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Render entries list (quick view)
+function renderEntries() {
+    const entries = getEntries();
+    const container = document.getElementById('entriesList');
+    const countEl = document.getElementById('entryCount');
+    
+    countEl.textContent = entries.length;
+    
+    if (entries.length === 0) {
+        container.innerHTML = '<p class="no-data">No entries yet. Add entries above to generate a report.</p>';
+        return;
+    }
+    
+    // Sort by date (newest first)
+    const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    container.innerHTML = sorted.map(entry => `
+        <div class="entry-item">
+            <span class="entry-date">${formatDate(entry.date)}</span>
+            <span class="entry-company">${escapeHtml(entry.company)}</span>
+            <span class="entry-person">${escapeHtml(entry.person)}</span>
+            <span class="entry-remarks" title="${escapeHtml(entry.remarks)}">${escapeHtml(entry.remarks)}</span>
+            <button class="entry-delete" onclick="deleteEntry('${entry.id}')" title="Delete">🗑️</button>
+        </div>
+    `).join('');
 }
 
 // Add new entry
@@ -104,111 +85,117 @@ document.getElementById('reportForm').addEventListener('submit', function(e) {
     entries.push(entry);
     saveEntries(entries);
     
+    // Reset form but keep date
+    const dateVal = document.getElementById('entryDate').value;
     this.reset();
-    // Set date to today for convenience
-    document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('entryDate').value = dateVal;
     
-    renderTable(document.getElementById('filterDate').value || null);
-    
-    showNotification('Entry added successfully! ✅');
-});
-
-// Edit entry
-function editEntry(id) {
-    const entries = getEntries();
-    const entry = entries.find(e => e.id === id);
-    
-    if (!entry) return;
-    
-    document.getElementById('editId').value = entry.id;
-    document.getElementById('editDate').value = entry.date;
-    document.getElementById('editCompany').value = entry.company;
-    document.getElementById('editPerson').value = entry.person;
-    document.getElementById('editRemarks').value = entry.remarks;
-    
-    document.getElementById('editModal').style.display = 'flex';
-}
-
-// Save edited entry
-document.getElementById('editForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('editId').value;
-    const entries = getEntries();
-    const index = entries.findIndex(e => e.id === id);
-    
-    if (index === -1) return;
-    
-    entries[index] = {
-        id: id,
-        date: document.getElementById('editDate').value,
-        company: document.getElementById('editCompany').value.trim(),
-        person: document.getElementById('editPerson').value.trim(),
-        remarks: document.getElementById('editRemarks').value.trim()
-    };
-    
-    saveEntries(entries);
-    document.getElementById('editModal').style.display = 'none';
-    renderTable(document.getElementById('filterDate').value || null);
-    
-    showNotification('Entry updated! ✅');
-});
-
-// Cancel edit
-document.getElementById('cancelEdit').addEventListener('click', function() {
-    document.getElementById('editModal').style.display = 'none';
-});
-
-// Close modal on outside click
-document.getElementById('editModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        this.style.display = 'none';
-    }
+    showNotification('Entry added! ✅');
 });
 
 // Delete entry
 function deleteEntry(id) {
-    if (!confirm('Are you sure you want to delete this entry?')) return;
-    
+    if (!confirm('Delete this entry?')) return;
     let entries = getEntries();
     entries = entries.filter(e => e.id !== id);
     saveEntries(entries);
-    
-    renderTable(document.getElementById('filterDate').value || null);
     showNotification('Entry deleted! 🗑️');
 }
 
-// Filter by date
-document.getElementById('filterDate').addEventListener('change', function() {
-    renderTable(this.value || null);
+// Clear all
+document.getElementById('clearAll').addEventListener('click', function() {
+    if (!confirm('⚠️ Delete ALL entries? This cannot be undone!')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    renderEntries();
+    document.getElementById('reportPreview').style.display = 'none';
+    showNotification('All entries cleared!');
 });
 
-// Clear filter
-document.getElementById('clearFilter').addEventListener('click', function() {
-    document.getElementById('filterDate').value = '';
-    renderTable(null);
-});
-
-// Export to Excel
-document.getElementById('exportExcel').addEventListener('click', function() {
-    let entries = getEntries();
+// ===== GENERATE REPORT =====
+document.getElementById('generateReport').addEventListener('click', function() {
+    const entries = getEntries();
     
     if (entries.length === 0) {
-        alert('No data to export!');
+        alert('No entries to generate report! Please add some entries first.');
         return;
     }
     
-    // Apply current filter if active
-    const filter = document.getElementById('filterDate').value;
-    if (filter) {
-        entries = entries.filter(e => e.date === filter);
+    const title = document.getElementById('reportTitle').value || 'Daily Sales Visit Report';
+    const reportHtml = generateReportHTML(entries, title);
+    
+    document.getElementById('reportOutput').innerHTML = reportHtml;
+    document.getElementById('reportPreview').style.display = 'block';
+    
+    // Scroll to preview
+    document.getElementById('reportPreview').scrollIntoView({ behavior: 'smooth' });
+    showNotification('Report generated! 📄');
+});
+
+// Close preview
+document.getElementById('closePreview').addEventListener('click', function() {
+    document.getElementById('reportPreview').style.display = 'none';
+});
+
+// Generate report HTML (matching sample format exactly)
+function generateReportHTML(entries, title) {
+    // Group entries by date
+    const grouped = {};
+    entries.forEach(entry => {
+        if (!grouped[entry.date]) {
+            grouped[entry.date] = [];
+        }
+        grouped[entry.date].push(entry);
+    });
+    
+    // Sort dates (newest first)
+    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+    
+    let rows = '';
+    sortedDates.forEach(date => {
+        grouped[date].forEach(entry => {
+            rows += `
+                <tr>
+                    <td>${formatDate(entry.date)}</td>
+                    <td>${escapeHtml(entry.company)}</td>
+                    <td>${escapeHtml(entry.person)}</td>
+                    <td>${escapeHtml(entry.remarks)}</td>
+                </tr>
+            `;
+        });
+    });
+    
+    return `
+        <div class="report-title">${escapeHtml(title)}</div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Company Name</th>
+                    <th>Person Name</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    `;
+}
+
+// ===== EXPORT TO EXCEL =====
+document.getElementById('exportExcel').addEventListener('click', function() {
+    const entries = getEntries();
+    
+    if (entries.length === 0) {
+        alert('No entries to export! Please add some entries first.');
+        return;
     }
     
-    // Sort by date
-    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Sort by date (newest first)
+    const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
     
-    // Prepare data for Excel
-    const excelData = entries.map(entry => ({
+    // Prepare data
+    const excelData = sorted.map(entry => ({
         'Date': formatDate(entry.date),
         'Company Name': entry.company,
         'Person Name': entry.person,
@@ -221,56 +208,52 @@ document.getElementById('exportExcel').addEventListener('click', function() {
     
     // Set column widths
     ws['!cols'] = [
-        { wch: 12 },  // Date
-        { wch: 20 },  // Company Name
-        { wch: 15 },  // Person Name
-        { wch: 80 }   // Remarks
+        { wch: 12 },   // Date
+        { wch: 22 },   // Company Name
+        { wch: 18 },   // Person Name
+        { wch: 80 }    // Remarks
     ];
     
     XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
     
-    // Generate filename
+    // Generate filename with date range
+    const title = document.getElementById('reportTitle').value || 'Sales_Report';
     const today = new Date().toISOString().split('T')[0];
-    const fileName = filter 
-        ? `Sales_Report_${formatDate(filter).replace(' ', '_')}.xlsx`
-        : `Sales_Report_${today}.xlsx`;
+    const fileName = `${title.replace(/\s+/g, '_')}_${today}.xlsx`;
     
     XLSX.writeFile(wb, fileName);
     showNotification('Excel file downloaded! 📥');
 });
 
-// Clear all data
-document.getElementById('clearAll').addEventListener('click', function() {
-    if (!confirm('⚠️ Are you sure you want to delete ALL report entries? This cannot be undone!')) return;
-    if (!confirm('This will permanently remove all data. Continue?')) return;
+// ===== PRINT REPORT =====
+document.getElementById('printReport').addEventListener('click', function() {
+    const entries = getEntries();
     
-    localStorage.removeItem(STORAGE_KEY);
-    renderTable(null);
-    showNotification('All data cleared! 🗑️');
+    if (entries.length === 0) {
+        alert('No entries to print! Please add some entries first.');
+        return;
+    }
+    
+    const title = document.getElementById('reportTitle').value || 'Daily Sales Visit Report';
+    const reportHtml = generateReportHTML(entries, title);
+    
+    // Set print area
+    document.getElementById('printArea').innerHTML = reportHtml;
+    
+    // Trigger print
+    window.print();
+    
+    showNotification('Print dialog opened! 🖨️');
 });
 
-// Notification toast
+// ===== NOTIFICATIONS =====
 function showNotification(message) {
-    // Remove existing notification
     const existing = document.querySelector('.notification');
     if (existing) existing.remove();
     
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #2c3e50;
-        color: white;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        z-index: 2000;
-        animation: slideIn 0.3s ease;
-    `;
     document.body.appendChild(notification);
     
     setTimeout(() => {
@@ -280,21 +263,11 @@ function showNotification(message) {
     }, 3000);
 }
 
-// Add slide-in animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-`;
-document.head.appendChild(style);
-
-// Initialize
+// ===== INITIALIZE =====
 document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today
     document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
     
     // Render existing entries
-    renderTable(null);
+    renderEntries();
 });
