@@ -1,502 +1,76 @@
 // ===== Daily Sales Report Generator =====
-// Generates remarks in natural, simple tone matching actual report samples
+// Enter company + person → Generate Report → editable remark appears
 
-const STORAGE_KEY = 'salesReportEntries';
+const STORAGE_KEY = 'salesReportData';
 
-// ===== REMARK GENERATION ENGINE =====
-// Based on real samples - simple, direct, conversational language
+// ===== SAMPLE REMARKS LIBRARY =====
+// Taken directly from actual report samples - natural tone, simple language
 
-// Opening phrases - how each entry starts (matched from samples)
-const openings = {
-    sales: [
-        "Discussed with sales person",
-        "Discussed with Sales person",
-        "Disscussed with sales person",
-        "Discussed with the sales person",
-        "Spoke with sales person"
-    ],
-    contracting: [
-        "Discussed with contracting incharge",
-        "Discussed with contracting manager",
-        "Discussed with contract person",
-        "Disscussed with contracting incharge and followed up"
-    ],
-    operation: [
-        "Discussed with Operation person",
-        "Discussed with operation incharge",
-        "Disscussed with Operation incharge"
-    ],
-    team: [
-        "Met the team, and discussed",
-        "Discussed with the team",
-        "Met the team and discussed"
-    ],
-    booking_incharge: [
-        "Discussed with booking incharge",
-        "Discussed with reservation incharge"
-    ],
-    account_manager: [
-        "Discussed with our account manager",
-        "Discussed with New account manager"
-    ],
-    admin: [
-        "Discussed with admin",
-        "Discussed with Admin officer"
-    ],
-    md: [
-        "Discussed with MD of the company"
-    ],
-    director: [
-        "Met the director and talked about our rates"
-    ],
-    company: [
-        "Discussed with company person",
-        "Met business development person"
-    ]
-};
-
-// Connectors and transition words used in samples
-const connectors = [
-    ", and",
-    ", and he advised that",
-    ", and she advised that",
-    ", and they advised that",
-    ". However",
-    ". Also",
-    ". Currently",
-    ". Due to",
-    ". As per"
+const sampleRemarks = [
+    "Discussed with sales person, and they advised that still {market} market not fully started. However they have group inquiry for {rooms} rooms for {month}. Due to their budget {rate} offered and waiting for the final update from them. Also winter rates has been given.",
+    "Discussed with sales person and talked about our rates for summer and winter. Currently he has one inquiry for {month} and {rooms} rooms with one comp room and he requesting {rate} with TD. Also informed him will discusse with management and advise on this request.",
+    "Discussed with contracting manager, and he advised that they are slowing starting, and {month} he wanted to flat rates without any supplement. I have informed as of now we are not able waive and there will be supplement for Diwali and Big5.",
+    "Discussed with Sales person, and they have inquiry for {rooms} Rooms and rates has been given {rate} with one comp room. Details No of Pax: {pax} adults Travelling Date: {traveldate} No of Nights: {nights} nights Room: {roomtype}",
+    "Disscussed with sales person, and they have inquiry C/In: {checkin} C/Out: {checkout} Room: {rooms} on {mealplan} with Breakfast Guest: {pax} Adults and rates has been given {rate} TD. Also request to support during summer.",
+    "Discussed with Operation person, and they have start offering our hotel for {market} market, and the inquiry dates {traveldate} No. of Pax {pax} Adults and rates has been offered {rate}.",
+    "New travel agency, approached and rates has been given and request to start offering our rates for their clients.",
+    "Followed up with her for future bookings and events inquiry and she advised that already she is offering our rates. However still not confirmed any inquiries. For today one night she has taken one room with the rates of {rate} on Room only basis.",
+    "Discussed with him for the future rates and promotion. He advised that he have problem with rate parity issues, and I have advised him so much discounted we cant do, however we will consider and update special rates on their portal.",
+    "Discussed with Sales person and they are handling {market} market, as per currently they don't have much inquiries however one inquiry they have for {traveldate} {rooms} Rooms and I have offered {rate} and requested her to confirm this inquiry.",
+    "Discussed with sales person, and they have requested for comp rooms during ATM, and I have advised we will come back after discussing with management. Also {month} and {nextmonth} rates has been giveb as flat rates, {month} {rate} and {nextmonth} {rate2} and requested them to offer this rates.",
+    "Discussed with company person, and he wanted to room from {traveldate} and he requsted lowest rates. {month} rates {rate} and {nextmonth} we offered {rate2} for his pernal booking. Waiting for the final update from him.",
+    "Discussed with contracting incharge and discussed about reopening the rates for {market} market. He advised that from {month} they are getting few inquiries from {company}, BB and HB rates has been given to them and requested him to support. Currently he have two inquiry and {rate} has been offered.",
+    "Managed to confirm {rooms} rooms group for {traveldate} for {nights} nights and rates confirmed {rate} and they have shared VCC as well. Also spoke to him if there is any group inquiry {market} marker we can offer case to case special rates, he advised that already he is offering our rates to their agencies.",
+    "Discussed with sales person and followed up if they have any inquiries for Summer and winter. He advised that they are start receiveing inquiries and still not confirmed yet. Also {month} they have FIT request and rates given and waiting for the final update from them.",
+    "Met the team, and discussed about our summer and winter rates and requested to push to their market. Sales incharge advised that, currently their agencies are taking mainly excursion from them. However they start receiving inquiries for winter and rates has been given for our hotel.",
+    "Discussed with the sales person, he advised that they start receving FIT inquiries and currently {month} they have inquiry and rates has been given. {prevmonth} {rate} and offered {rate2} and waiting for the final update from him.",
+    "Discussed with the sales person, they have inquiry for Travel Date: {traveldate} Duration: {duration} for {rooms} rooms. I have offered {rate} and one {supplement} supplement and requested her to confimr with us.",
+    "They have Group inquiry for {checkin} Check Out: {checkout} Room Requirements: {rooms} Room with Breakfast and rates has been given {rate} and requested her to convert this group with us. She advised rates has been shared with their agency and waitng for the final update from them.",
+    "They have FIT inquiry for {traveldate} one {roomtype} room and rates has been offered {rate} and extra bed price {extrabed}. Also one day {supplement} supplement and waiting for their update.",
+    "Discussed with operation incharge, and long time they were operating and now they start receiving inquiries. End of {month} he has one inquiry and dates not confirmed and rates has been given {rate} and waiting for the final update and requested him to start offering our hotel.",
+    "Disscussed with sales person, and they have group inquiry Check in:{checkin} Check Out: {checkout} Hotel: Grand Central Hotel No Of Rooms {rooms} and rates has been offered {rate} PRPN BB and he advised that tomorrow will come back with final answer.",
+    "Discussed with Sales person, for them we have given NRF 5% and weekdays and weekends different rates. They advised that due to parity from B2B channels they are not able to proude, Hence NRF rates has been revised with 10% discount and request them to push again from them.",
+    "Discussed with contracting incharge and our summer rates has been loaded and they just started as of now they are taking beach hotels. City hotels still not start producing, however he will advise his team to push our hotel.",
+    "Discussed with Sales manager and they have group request for during {month}, Date: {traveldate} No. of Pax: {pax} Pax (All Adults) Number of rooms: {rooms} Room, and I have offered {rate} with {supplement} Supplement. He will try with agency and advise as earliest.",
+    "Discussed with Sales manager regarding summer inquiries and he have one inquiry for Winter: {pax} adults {traveldate} and I have offered {rate} since its begnining of winter season. Requested him to confirm this request with us.",
+    "Discussed with contract incharges, and currently they don't have inquiry for Dubai, however they got one inquiry for {traveldate} {nights} nights {rooms} rooms and I have offered {rate} for this inquiry and waiting for the final update from them. This agency last year they start working with us.",
+    "Discussed with sales person they have {rooms} rooms for {month} and they have requested to confirm with {rate} due to budget issue. As per him, this booking for another hotel, and they wanted to convert to our hotel. Hence special rates offered and confirmed.",
+    "Discussed with sales person, she had one inquiry for one month, and rates offered {rate} special case and she will try with the clients and advise on this.",
+    "Discussed with Admin officer, and their corporate company, discussed about hotel and rates. He advised that for his staff he will book hotel. Also requested him arrange meeting with him in order to discusse and start working together.",
+    "Met business development person for our hotel website configuration, and discussed with him how its works and the charges. They charge 10% commission for per booking there is no any additional charges. We are waiting for the contract from them.",
+    "Met the director and talked about our rates. Corporate account and he will have some clients and need rates for him. Also he advised that regularly he will start booking with us. He requested special rates and advised him depending on the availability.",
+    "Discussed with booking incharge and he advised that they were operating but no any technical staffs from another country. However now he got one booking and its booked with us. Corporate account, and he advised soon some of the staffs will come from their company he will offer our rates.",
+    "Discussed with booker, and she have inquiry for {month} for {rooms} person meeting rooms initially offered {rate} per person with lunch and tea breaks. She advised that they don't have budget and she wanted to reduce the price and same has been confirmed {rate2} per person and for {nights} days, the total revenue {totalrevenue}.",
+    "Disscussed with contracting incharge and followed up for business update from him. As per him currently they don't have much inquiry and soon they will start. Also B2B agreed for pilot property and soon they will start the testing process for B2B and B2c. He advised that once we start this soon we can expect some bookings from them.",
+    "Discussed with the team, and release period has been changed to 0 to 1 day in order to avoid any last minute booking issue. Also requested to push our rates to their partners to increase the bookings from them.",
+    "Discussed with Sales person, July and {month} they start producing after given special rates. Also he advised that our hotel they will publish on their aniversary magazine with our hotel picture and it will shared with all their partnerts. Also I have requested to start selling winter as well.",
+    "Discussed with New account manager talked about current business situation. She advised that due to current situation international tourists are not that much. Also mobile discount has been activated and discussed what other promotion we can do. Next week we will discuss again.",
+    "Discussed with Contract person and they have only few inquiries. Also they are not receiving bookings on their B2B system, however our rates are already loaded on their system. She advised that inform their marketing team to push our hotel page.",
+    "Discussed with reservation incharge and follow up whether our rates are loaded on their system. He advised that summer rates are loaded abd bookings are less from their market, however for their inquiries they are offering our rates, and request him to push our hotel.",
+    "Discussed with Sales person and they have inquiry and yesterday managed to confirm {rooms} rooms, as per him, market bit slow. However for their clients they are offering our special rates and I have informd him our support will be there in the rates and push more business from {market} market.",
+    "Discussed with Contract incharge and she advised that still they didn't start the process and she is India. She advised that hopefully by {month} they will start again and start offering our rates and they are doing all Market.",
+    "Discussed with Sales, and he advised that there is no much inquiries, our rates has been offered and advised to offer if there is any inquiries. Requested him to support us and push for more business from their side. Also one Room only booking has been confimred for today.",
+    "Discussed with Sales incharge, and she advised that still they didn't fully operation, however our summer rates has been given to her. Requested her to offer rates whenever there is inquiries.",
+    "Discussed with Sales person and Discussed with him for the summer and winter rates, he advised that rates were loaded on their portal, and hopefully from {month} we can except group and FIT bookings from them.",
+    "Discussed with sales person for the upcoming business and she advised that {market} market not started yet, however they have one inquiry for {month} and rates has been offered {rate} and she advised that sent to agency and waiting for the update. Also special rates has been given for FIT and request to support.",
+    "Discussed with admin, and she advised that now only start receiving booking for their staff and she will offer our rates. Currently one room booked for {month} with the rates of {rate}.",
+    "Discussed with MD of the company, and he advised {market} Market not moving still, however they will start promoting for Winter and rates has been given to them. Also he advised that he has credit request for Refund, I have informed him we can use as credit balance for future bookings.",
+    "Discsed with Operation incharge they have multiple inquiry and they agreed to offer for their {market} market our hotel. No. of Pax {pax} Adults Date of Travel {traveldate} and rates has been given {rate}. waiting for their update.",
+    "Discussed with our account manager, and their production increased and she advised she doing marketing for our hotel to get more bookings, and we are start receving from them. Also {month} rates has been revised and requested her to support in the same way.",
+    "They have inquiry for {month} Check-in: {checkin} Check-out: {checkout} {rooms} rooms and rate has been given {rate} and waiting for the final update. Also they are requesting comp room for Atm.",
+    "Summer {month} rates has been revised for them, weekends different price and weekdays different price. Requested them to load the rates as earliest and suppot us during summer."
 ];
 
-// Rate related phrases
-const ratePhrases = [
-    "rates has been given",
-    "rates has been offered",
-    "rates have been given",
-    "I have offered",
-    "rates has been given and offered",
-    "and rates has been given"
-];
+// ===== GENERATE RANDOM REMARK =====
+function generateRandomRemark() {
+    return pick(sampleRemarks);
+}
 
-// Waiting phrases
-const waitingPhrases = [
-    "waiting for the final update from them",
-    "waiting for the final update",
-    "waiting for their update",
-    "waiting for the update",
-    "and waiting for the final update from them"
-];
-
-// Request phrases
-const requestPhrases = [
-    "and requested him to support",
-    "and requested her to confirm this inquiry",
-    "and requested them to push",
-    "Requested him to confirm this request with us",
-    "Requested to start offering our rates for their clients",
-    "and request to support",
-    "requested her to support in the same way",
-    "requested them to offer rates whenever there is inquiries"
-];
-
-// Random pick helper
 function pick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// ===== MAIN REMARK GENERATOR =====
-function generateRemark(data) {
-    const { personRole, discussionType, keyPoints, travelDates, rooms, rateOffered, roomType, mealPlan, supplement, duration, gender } = data;
-
-    let remark = '';
-
-    switch (discussionType) {
-        case 'inquiry':
-            remark = buildInquiryRemark(data);
-            break;
-        case 'group_inquiry':
-            remark = buildGroupInquiryRemark(data);
-            break;
-        case 'fit_inquiry':
-            remark = buildFITInquiryRemark(data);
-            break;
-        case 'followup':
-            remark = buildFollowupRemark(data);
-            break;
-        case 'confirmed':
-            remark = buildConfirmedRemark(data);
-            break;
-        case 'new_agency':
-            remark = buildNewAgencyRemark(data);
-            break;
-        case 'rates_discussion':
-            remark = buildRatesDiscussionRemark(data);
-            break;
-        case 'market_update':
-            remark = buildMarketUpdateRemark(data);
-            break;
-        case 'parity_issue':
-            remark = buildParityRemark(data);
-            break;
-        case 'corporate':
-            remark = buildCorporateRemark(data);
-            break;
-        default:
-            remark = buildGenericRemark(data);
-    }
-
-    return cleanText(remark);
-}
-
-function buildInquiryRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-    const G = g.charAt(0).toUpperCase() + g.slice(1);
-
-    parts.push(pick(openings[data.personRole] || openings.sales));
-
-    if (data.keyPoints) {
-        parts.push(`, ${processKeyPoints(data.keyPoints, data)}`);
-    } else {
-        parts.push(`, and ${g} advised that they have inquiry`);
-        
-        if (data.travelDates) {
-            parts.push(` for ${data.travelDates}`);
-        }
-
-        if (data.rooms) {
-            parts.push(` ${data.rooms}`);
-        }
-
-        if (data.roomType) {
-            parts.push(` ${data.roomType}`);
-        }
-
-        if (data.mealPlan) {
-            parts.push(` with ${data.mealPlan}`);
-        }
-    }
-
-    if (data.rateOffered) {
-        parts.push(` and ${pick(ratePhrases)} ${data.rateOffered}`);
-    }
-
-    if (data.supplement) {
-        parts.push(`. Also ${data.supplement} supplement`);
-    }
-
-    parts.push(`. ${pick(waitingPhrases)}.`);
-
-    return parts.join('');
-}
-
-function buildGroupInquiryRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(pick(openings[data.personRole] || openings.sales));
-    parts.push(`, and they have group inquiry`);
-
-    if (data.travelDates) {
-        parts.push(` for ${data.travelDates}`);
-    }
-
-    if (data.rooms) {
-        parts.push(`. Room Requirements: ${data.rooms}`);
-    }
-
-    if (data.roomType) {
-        parts.push(` ${data.roomType}`);
-    }
-
-    if (data.mealPlan) {
-        parts.push(` with ${data.mealPlan}`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(` and ${pick(ratePhrases)} ${data.rateOffered}`);
-    }
-
-    if (data.supplement) {
-        parts.push(`. ${data.supplement} supplement given`);
-    }
-
-    if (data.duration) {
-        parts.push(`. Duration: ${data.duration}`);
-    }
-
-    if (data.keyPoints) {
-        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
-    }
-
-    parts.push(`. ${pick(waitingPhrases)}.`);
-
-    return parts.join('');
-}
-
-function buildFITInquiryRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(pick(openings[data.personRole] || openings.sales));
-    parts.push(`, and they have FIT inquiry`);
-
-    if (data.travelDates) {
-        parts.push(` for ${data.travelDates}`);
-    }
-
-    if (data.rooms) {
-        parts.push(` ${data.rooms}`);
-    }
-
-    if (data.roomType) {
-        parts.push(` ${data.roomType} room`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(` and ${pick(ratePhrases)} ${data.rateOffered}`);
-    }
-
-    if (data.mealPlan) {
-        parts.push(` on ${data.mealPlan} basis`);
-    }
-
-    if (data.supplement) {
-        parts.push(`. Also ${data.supplement} supplement`);
-    }
-
-    if (data.keyPoints) {
-        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
-    }
-
-    parts.push(`. ${pick(waitingPhrases)}.`);
-
-    return parts.join('');
-}
-
-function buildFollowupRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(`Followed up with ${g === 'he' ? 'him' : 'her'}`);
-
-    if (data.keyPoints) {
-        parts.push(` ${processKeyPoints(data.keyPoints, data)}`);
-    } else {
-        parts.push(` for future bookings and events inquiry`);
-        parts.push(` and ${g} advised that already ${g} is offering our rates`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(`. Rates of ${data.rateOffered} has been offered`);
-    }
-
-    parts.push(`. ${pick(waitingPhrases)}.`);
-
-    return parts.join('');
-}
-
-function buildConfirmedRemark(data) {
-    let parts = [];
-
-    parts.push(`Managed to confirm`);
-
-    if (data.rooms) {
-        parts.push(` ${data.rooms}`);
-    }
-
-    if (data.travelDates) {
-        parts.push(` for ${data.travelDates}`);
-    }
-
-    if (data.duration) {
-        parts.push(` for ${data.duration}`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(` and rates confirmed ${data.rateOffered}`);
-    }
-
-    if (data.mealPlan) {
-        parts.push(` on ${data.mealPlan}`);
-    }
-
-    if (data.keyPoints) {
-        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
-    }
-
-    return parts.join('');
-}
-
-function buildNewAgencyRemark(data) {
-    const templates = [
-        "New travel agency, approached and rates has been given and request to start offering our rates for their clients.",
-        "New Travel agency, approached and rates has been given and requested to start offering our rates for their clients.",
-        "New B2b Portal discussed with them, and rates and our hotel details has been shared with them.",
-        "New agency partner, approached and our rates and hotel information has been shared. Requested them to start offering our hotel."
-    ];
-
-    let remark = pick(templates);
-
-    if (data.keyPoints) {
-        remark += ` ${processKeyPoints(data.keyPoints, data)}`;
-    }
-
-    return remark;
-}
-
-function buildRatesDiscussionRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(pick(openings[data.personRole] || openings.sales));
-    parts.push(` and talked about our rates for summer and winter`);
-
-    if (data.keyPoints) {
-        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
-    } else {
-        parts.push(`. ${G} advised that they are start receiving inquiries`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(`. Rates has been given ${data.rateOffered}`);
-    }
-
-    parts.push(`. ${pick(requestPhrases)}.`);
-
-    return parts.join('');
-}
-
-function buildMarketUpdateRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(pick(openings[data.personRole] || openings.sales));
-
-    if (data.keyPoints) {
-        parts.push(`, and ${g} advised that ${processKeyPoints(data.keyPoints, data)}`);
-    } else {
-        parts.push(`, and ${g} advised that market is slowly starting`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(`. Our rates has been given ${data.rateOffered}`);
-    }
-
-    parts.push(`. ${pick(waitingPhrases)}.`);
-
-    return parts.join('');
-}
-
-function buildParityRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(pick(openings[data.personRole] || openings.sales));
-    parts.push(` for the future rates and promotion`);
-    parts.push(`. ${G === 'He' ? 'He' : 'She'} advised that ${g} have problem with rate parity issues`);
-
-    if (data.keyPoints) {
-        parts.push(`, ${processKeyPoints(data.keyPoints, data)}`);
-    } else {
-        parts.push(`, and I have advised him so much discounted we cant do, however we will consider and update special rates on their portal`);
-    }
-
-    parts.push('.');
-
-    return parts.join('');
-}
-
-function buildCorporateRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(pick(openings[data.personRole] || openings.company));
-    parts.push(`, and their corporate company, discussed about hotel and rates`);
-
-    if (data.keyPoints) {
-        parts.push(`. ${processKeyPoints(data.keyPoints, data)}`);
-    } else {
-        parts.push(`. ${G === 'He' ? 'He' : 'She'} advised that for ${g === 'he' ? 'his' : 'her'} staff ${g} will book hotel`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(`. Rates offered ${data.rateOffered}`);
-    }
-
-    parts.push('.');
-
-    return parts.join('');
-}
-
-function buildGenericRemark(data) {
-    let parts = [];
-    const g = data.gender || 'he';
-
-    parts.push(pick(openings[data.personRole] || openings.sales));
-
-    if (data.keyPoints) {
-        parts.push(`, ${processKeyPoints(data.keyPoints, data)}`);
-    }
-
-    if (data.rateOffered) {
-        parts.push(`. Rates has been offered ${data.rateOffered}`);
-    }
-
-    parts.push(`. ${pick(waitingPhrases)}.`);
-
-    return parts.join('');
-}
-
-// Process key points - convert bullets into flowing natural text
-function processKeyPoints(text, data) {
-    if (!text || text.trim() === '') return '';
-
-    // Split by newlines or dashes/bullets
-    let points = text.split(/[\n\r]+/)
-        .map(p => p.replace(/^[-•*]\s*/, '').trim())
-        .filter(p => p.length > 0);
-
-    if (points.length === 0) return text.trim();
-    if (points.length === 1) return points[0];
-
-    // Join naturally with "and", "Also", "However" like in samples
-    let result = points[0];
-    for (let i = 1; i < points.length; i++) {
-        const connectorOptions = ['. Also ', '. ', ', and ', '. However '];
-        // Use "Also" for additional info, "However" for contrast
-        const point = points[i].toLowerCase();
-        if (point.startsWith('however') || point.startsWith('but')) {
-            result += `. However ${points[i].replace(/^(however|but)\s*/i, '')}`;
-        } else if (point.startsWith('also')) {
-            result += `. Also ${points[i].replace(/^also\s*/i, '')}`;
-        } else {
-            // Alternate between connectors
-            if (i % 2 === 0) {
-                result += `. Also ${points[i]}`;
-            } else {
-                result += `, and ${points[i]}`;
-            }
-        }
-    }
-
-    return result;
-}
-
-// Clean up text - fix double periods, spacing
-function cleanText(text) {
-    return text
-        .replace(/\s+/g, ' ')
-        .replace(/\.\./g, '.')
-        .replace(/\s\./g, '.')
-        .replace(/,\s*\./g, '.')
-        .replace(/\.\s*,/g, ', ')
-        .replace(/,,/g, ',')
-        .trim();
-}
-
-// ===== DATA MANAGEMENT =====
-
+// ===== DATA =====
 function getEntries() {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
@@ -512,12 +86,10 @@ function formatDate(dateStr) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const month = months[date.getMonth()];
-
     let suffix = 'th';
     if (day === 1 || day === 21 || day === 31) suffix = 'st';
     else if (day === 2 || day === 22) suffix = 'nd';
     else if (day === 3 || day === 23) suffix = 'rd';
-
     return `${day}${suffix} ${month}`;
 }
 
@@ -535,19 +107,12 @@ function escapeHtml(text) {
 function renderTable() {
     const entries = getEntries();
     const tbody = document.getElementById('reportBody');
-    const noData = document.getElementById('noData');
-    const table = document.getElementById('reportTable');
 
     if (entries.length === 0) {
-        table.style.display = 'none';
-        noData.style.display = 'block';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">Click "Generate Report" to add entries</td></tr>';
         return;
     }
 
-    table.style.display = 'table';
-    noData.style.display = 'none';
-
-    // Sort by date (newest first)
     const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     tbody.innerHTML = sorted.map(entry => `
@@ -555,37 +120,33 @@ function renderTable() {
             <td>${formatDate(entry.date)}</td>
             <td>${escapeHtml(entry.company)}</td>
             <td>${escapeHtml(entry.person)}</td>
-            <td>${escapeHtml(entry.remarks)}<br><button class="delete-btn" onclick="deleteEntry('${entry.id}')">❌</button></td>
+            <td class="remark-cell">
+                <div class="remark-text" contenteditable="true" data-id="${entry.id}" onblur="updateRemark(this)">${escapeHtml(entry.remarks)}</div>
+                <button class="row-delete" onclick="deleteEntry('${entry.id}')">❌</button>
+            </td>
         </tr>
     `).join('');
 }
 
-// ===== FORM SUBMISSION =====
-document.getElementById('reportForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+// ===== GENERATE BUTTON =====
+document.getElementById('generateBtn').addEventListener('click', function() {
+    const date = document.getElementById('entryDate').value;
+    const company = document.getElementById('companyName').value.trim();
+    const person = document.getElementById('personName').value.trim();
 
-    const data = {
-        personRole: document.getElementById('personRole').value,
-        discussionType: document.getElementById('discussionType').value,
-        keyPoints: document.getElementById('keyPoints').value.trim(),
-        travelDates: document.getElementById('travelDates').value.trim(),
-        rooms: document.getElementById('rooms').value.trim(),
-        rateOffered: document.getElementById('rateOffered').value.trim(),
-        roomType: document.getElementById('roomType').value.trim(),
-        mealPlan: document.getElementById('mealPlan').value,
-        supplement: document.getElementById('supplement').value.trim(),
-        duration: document.getElementById('duration').value.trim(),
-        gender: document.getElementById('gender').value
-    };
+    if (!company || !person) {
+        alert('Please enter Company Name and Person Name');
+        return;
+    }
 
-    // Generate the remark automatically
-    const remark = generateRemark(data);
+    // Generate a random remark from samples
+    const remark = generateRandomRemark();
 
     const entry = {
         id: generateId(),
-        date: document.getElementById('entryDate').value,
-        company: document.getElementById('companyName').value.trim(),
-        person: document.getElementById('personName').value.trim(),
+        date: date,
+        company: company,
+        person: person,
         remarks: remark
     };
 
@@ -594,18 +155,26 @@ document.getElementById('reportForm').addEventListener('submit', function(e) {
     saveEntries(entries);
     renderTable();
 
-    // Reset form but keep date
-    const dateVal = document.getElementById('entryDate').value;
-    this.reset();
-    document.getElementById('entryDate').value = dateVal;
-
-    showNotification('Report entry generated! ✅');
-    document.getElementById('reportTable').scrollIntoView({ behavior: 'smooth' });
+    // Clear company and person for next entry
+    document.getElementById('companyName').value = '';
+    document.getElementById('personName').value = '';
+    document.getElementById('companyName').focus();
 });
 
-// Delete entry
+// ===== UPDATE REMARK (editable) =====
+function updateRemark(el) {
+    const id = el.getAttribute('data-id');
+    const newText = el.innerText.trim();
+    let entries = getEntries();
+    const idx = entries.findIndex(e => e.id === id);
+    if (idx !== -1) {
+        entries[idx].remarks = newText;
+        saveEntries(entries);
+    }
+}
+
+// ===== DELETE ENTRY =====
 function deleteEntry(id) {
-    if (!confirm('Delete this entry?')) return;
     let entries = getEntries();
     entries = entries.filter(e => e.id !== id);
     saveEntries(entries);
@@ -615,10 +184,10 @@ function deleteEntry(id) {
 // ===== EXPORT EXCEL =====
 document.getElementById('exportExcel').addEventListener('click', function() {
     const entries = getEntries();
-    if (entries.length === 0) { alert('No entries to export!'); return; }
+    if (entries.length === 0) { alert('No entries!'); return; }
 
     const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const excelData = sorted.map(entry => ({
+    const data = sorted.map(entry => ({
         'Date': formatDate(entry.date),
         'Company Name': entry.company,
         'Person Name': entry.person,
@@ -626,19 +195,18 @@ document.getElementById('exportExcel').addEventListener('click', function() {
     }));
 
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(excelData);
+    const ws = XLSX.utils.json_to_sheet(data);
     ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 18 }, { wch: 90 }];
     XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
 
     const today = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `Daily_Sales_Report_${today}.xlsx`);
-    showNotification('Excel exported! 📥');
 });
 
 // ===== PRINT =====
 document.getElementById('printReport').addEventListener('click', function() {
     const entries = getEntries();
-    if (entries.length === 0) { alert('No entries to print!'); return; }
+    if (entries.length === 0) { alert('No entries!'); return; }
 
     const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
     let rows = sorted.map(entry => `
@@ -651,8 +219,7 @@ document.getElementById('printReport').addEventListener('click', function() {
     `).join('');
 
     document.getElementById('printArea').innerHTML = `
-        <h2 style="text-align:center;margin-bottom:15px;">Daily Sales Visit Report</h2>
-        <table class="report-table" style="width:100%;border-collapse:collapse;border:2px solid #000;">
+        <table style="width:100%;border-collapse:collapse;border:2px solid #000;">
             <thead><tr style="background:#ffff00;">
                 <th style="border:1px solid #000;padding:10px;">Date</th>
                 <th style="border:1px solid #000;padding:10px;">Company Name</th>
@@ -667,26 +234,10 @@ document.getElementById('printReport').addEventListener('click', function() {
 
 // ===== CLEAR ALL =====
 document.getElementById('clearAll').addEventListener('click', function() {
-    if (!confirm('⚠️ Delete ALL entries?')) return;
+    if (!confirm('Clear all entries?')) return;
     localStorage.removeItem(STORAGE_KEY);
     renderTable();
-    showNotification('All entries cleared!');
 });
-
-// ===== NOTIFICATION =====
-function showNotification(message) {
-    const existing = document.querySelector('.notification');
-    if (existing) existing.remove();
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transition = 'opacity 0.3s';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function() {
